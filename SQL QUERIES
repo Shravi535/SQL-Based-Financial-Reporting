@@ -1,0 +1,62 @@
+💼 Table Assumptions
+Assume you have the following tables:
+
+payments(payment_id, client_id, amount_paid, payment_date)
+
+invoices(invoice_id, client_id, invoice_amount, due_date, payment_status)
+
+clients(client_id, client_name)
+
+1️⃣ Total Payments Received by Month
+SELECT 
+    DATE_FORMAT(payment_date, '%Y-%m') AS month,
+    SUM(amount_paid) AS total_payments
+FROM payments
+GROUP BY month
+ORDER BY month;
+
+2️⃣ Outstanding Invoices by Client
+SELECT 
+    c.client_name,
+    COUNT(*) AS unpaid_invoices,
+    SUM(i.invoice_amount) AS total_outstanding
+FROM invoices i
+JOIN clients c ON i.client_id = c.client_id
+WHERE i.payment_status = 'Unpaid'
+GROUP BY c.client_name
+ORDER BY total_outstanding DESC;
+
+3️⃣ Aging Report (0-30, 31-60, 61-90, 90+ Days)
+SELECT 
+    CASE
+        WHEN DATEDIFF(CURDATE(), due_date) BETWEEN 0 AND 30 THEN '0-30 Days'
+        WHEN DATEDIFF(CURDATE(), due_date) BETWEEN 31 AND 60 THEN '31-60 Days'
+        WHEN DATEDIFF(CURDATE(), due_date) BETWEEN 61 AND 90 THEN '61-90 Days'
+        ELSE '90+ Days'
+    END AS age_bucket,
+    COUNT(*) AS invoice_count,
+    SUM(invoice_amount) AS total_due
+FROM invoices
+WHERE payment_status = 'Unpaid'
+GROUP BY age_bucket
+ORDER BY age_bucket;
+
+4️⃣ Revenue by Service or Department
+(Assuming an extra column service_type in payments)
+SELECT service_type, SUM(amount_paid) AS revenue
+FROM payments
+GROUP BY service_type
+ORDER BY revenue DESC;
+
+5️⃣ Clients with Delayed Payments (Overdue)
+t
+SELECT 
+    c.client_name,
+    i.invoice_id,
+    i.invoice_amount,
+    i.due_date
+FROM invoices i
+JOIN clients c ON i.client_id = c.client_id
+WHERE i.payment_status = 'Unpaid' 
+  AND i.due_date < CURDATE()
+ORDER BY i.due_date ASC;
